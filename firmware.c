@@ -8,10 +8,12 @@
  */
 
 #include <linux/firmware.h>
+#include <linux/workqueue.h>
 
 #include "greybus.h"
 
 struct gb_firmware {
+	struct work_struct	work;
 	struct gb_connection	*connection;
 	const struct firmware	*fw;
 };
@@ -20,6 +22,24 @@ static void free_firmware(struct gb_firmware *firmware)
 {
 	release_firmware(firmware->fw);
 	firmware->fw = NULL;
+}
+
+static void firmware_reboot(struct work_struct *work)
+{
+	struct gb_firmware *firmware = container_of(work, struct gb_firmware, work);
+	struct gb_interface *intf = firmware->connection->bundle->intf;
+	int ret;
+
+	/* Firmware can be freed now */
+	free_firmware(firmware);
+
+	/* 'firmware' structure will be freed at this call */
+	gb_interface_exit(intf);
+
+	ret = gb_interface_init(intf, intf->device_id);
+	if (ret)
+		dev_err(&intf->dev, "%s: Failed to initialize interface %hhu (%d)\n",
+			__func__, intf->interface_id, ret);
 }
 
 /* This returns path of the firmware blob on the disk */
@@ -121,6 +141,7 @@ static int gb_firmware_get_firmware(struct gb_operation *op)
 static int gb_firmware_ready_to_boot(struct gb_operation *op)
 {
 	struct gb_connection *connection = op->connection;
+	struct gb_firmware *firmware = connection->private;
 	struct gb_firmware_ready_to_boot_request *rtb_request = op->request->payload;
 	struct device *dev = &connection->dev;
 	u8 stage, status;
@@ -138,6 +159,8 @@ static int gb_firmware_ready_to_boot(struct gb_operation *op)
 	/* Return error if the blob was invalid */
 	if (status == GB_FIRMWARE_BOOT_STATUS_INVALID)
 		return -EINVAL;
+
+	queue_work(system_unbound_wq, &firmware->work);
 
 	/*
 	 * XXX Should we return error for insecure firmware?
@@ -171,6 +194,7 @@ static int gb_firmware_connection_init(struct gb_connection *connection)
 	if (!firmware)
 		return -ENOMEM;
 
+	INIT_WORK(&firmware->work, firmware_reboot);
 	firmware->connection = connection;
 	connection->private = firmware;
 
@@ -211,5 +235,6 @@ static struct gb_protocol firmware_protocol = {
 	.connection_init	= gb_firmware_connection_init,
 	.connection_exit	= gb_firmware_connection_exit,
 	.request_recv		= gb_firmware_request_recv,
+	.flags			= GB_PROTOCOL_SKIP_CONTROL_DISCONNECTED,
 };
 gb_builtin_protocol_driver(firmware_protocol);
