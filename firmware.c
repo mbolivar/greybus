@@ -33,6 +33,10 @@ static void firmware_reboot(struct work_struct *work)
 	/* Firmware can be freed now */
 	free_firmware(firmware);
 
+	ret = gb_svc_poll_T_TstSrcIncrement(intf);
+	if (ret)
+		return;
+
 	/* 'firmware' structure will be freed at this call */
 	gb_interface_exit(intf);
 

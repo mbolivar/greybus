@@ -176,6 +176,41 @@ int gb_svc_dme_peer_set(struct gb_svc *svc, u8 intf_id, u16 attr, u16 selector,
 }
 EXPORT_SYMBOL_GPL(gb_svc_dme_peer_set);
 
+int gb_svc_poll_T_TstSrcIncrement(struct gb_interface *intf)
+{
+	struct greybus_host_device *hd = intf->hd;
+	int ret, retries = 0;
+	u32 value;
+
+	/* Poll and clear boot status in T_TstSrcIncrement */
+	while (retries < MAX_DME_RETRIES) {
+		ret = gb_svc_dme_peer_get(hd->svc, intf->interface_id,
+					  DME_ATTR_T_TstSrcIncrement,
+					  DME_ATTR_SELECTOR_INDEX, &value);
+
+		if (ret)
+			return ret;
+
+		/*
+		 * A nonzero boot status indicates the module has
+		 * finished booting. Clear it.
+		 *
+		 * FIXME: this assumes any nonzero value means "success".
+		 */
+		if (value) {
+			return gb_svc_dme_peer_set(hd->svc, intf->interface_id,
+						   DME_ATTR_T_TstSrcIncrement,
+						   DME_ATTR_SELECTOR_INDEX, 0);
+		}
+
+		cpu_relax();
+	}
+
+	dev_err(&intf->dev, "Polled T_TstSrcIncrement %d number of times, timed out\n",
+		MAX_DME_RETRIES);
+	return -ETIMEDOUT;
+}
+
 int gb_svc_connection_create(struct gb_svc *svc,
 				u8 intf1_id, u16 cport1_id,
 				u8 intf2_id, u16 cport2_id)
@@ -355,6 +390,10 @@ static void svc_process_hotplug(struct work_struct *work)
 			__func__, intf_id);
 		goto free_svc_hotplug;
 	}
+
+	ret = gb_svc_poll_T_TstSrcIncrement(intf);
+	if (ret)
+		goto destroy_interface;
 
 	intf->unipro_mfg_id = le32_to_cpu(hotplug->data.unipro_mfg_id);
 	intf->unipro_prod_id = le32_to_cpu(hotplug->data.unipro_prod_id);

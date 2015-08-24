@@ -824,6 +824,12 @@ struct gb_svc_dme_peer_set_response {
 	__u16	result_code;
 } __packed;
 
+/* Attributes for peer get/set operations */
+#define MAX_DME_RETRIES			100
+
+#define DME_ATTR_SELECTOR_INDEX		0
+#define DME_ATTR_T_TstSrcIncrement	0x4083
+
 struct gb_svc_route_create_request {
 	__u8	intf1_id;
 	__u8	dev1_id;
