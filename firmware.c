@@ -20,6 +20,7 @@ struct gb_firmware {
 
 static void free_firmware(struct gb_firmware *firmware)
 {
+	pr_info("%s: %d\n", __func__, __LINE__);
 	release_firmware(firmware->fw);
 	firmware->fw = NULL;
 }
@@ -30,6 +31,7 @@ static void firmware_reboot(struct work_struct *work)
 	struct gb_interface *intf = firmware->connection->bundle->intf;
 	int ret;
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	/* Firmware can be freed now */
 	free_firmware(firmware);
 
@@ -37,13 +39,17 @@ static void firmware_reboot(struct work_struct *work)
 	if (ret)
 		return;
 
+	pr_info("%s: %d\n", __func__, __LINE__);
+
 	/* 'firmware' structure will be freed at this call */
 	gb_interface_exit(intf);
 
 	ret = gb_interface_init(intf, intf->device_id);
+	pr_info("%s: %d\n", __func__, __LINE__);
 	if (ret)
 		dev_err(&intf->dev, "%s: Failed to initialize interface %hhu (%d)\n",
 			__func__, intf->interface_id, ret);
+	pr_info("%s: %d: %d\n", __func__, __LINE__, ret);
 }
 
 /* This returns path of the firmware blob on the disk */
@@ -54,8 +60,10 @@ static int download_firmware(struct gb_firmware *firmware, u8 stage)
 	char firmware_name[48];
 
 	/* Already have a firmware, free it */
-	if (firmware->fw)
+	if (firmware->fw) {
+		pr_info("%s: %d\n", __func__, __LINE__);
 		free_firmware(firmware);
+	}
 
 	/*
 	 * Create firmware name
@@ -66,6 +74,7 @@ static int download_firmware(struct gb_firmware *firmware, u8 stage)
 		 "ara:%08x:%08x:%08x:%08x:%02x.tftf",
 		 intf->unipro_mfg_id, intf->unipro_prod_id,
 		 intf->ara_vend_id, intf->ara_prod_id, stage);
+	pr_info("%s: %d: %s\n", __func__, __LINE__, firmware_name);
 
 	return request_firmware(&firmware->fw, firmware_name, &connection->dev);
 }
@@ -102,6 +111,7 @@ static int gb_firmware_size_request(struct gb_operation *op)
 
 	size_response = op->response->payload;
 	size_response->size = cpu_to_le32(firmware->fw->size);
+	pr_info("%s: %d: %u\n", __func__, __LINE__, firmware->fw->size);
 
 	return 0;
 }
@@ -114,6 +124,8 @@ static int gb_firmware_get_firmware(struct gb_operation *op)
 	struct gb_firmware_get_firmware_response *firmware_response;
 	struct device *dev = &connection->dev;
 	unsigned int offset, size;
+
+	pr_info("%s: %d\n", __func__, __LINE__);
 
 	if (op->request->payload_size != sizeof(*firmware_request)) {
 		dev_err(dev, "%s: Illegal size of get firmware request (%zu %zu)\n",
@@ -138,6 +150,7 @@ static int gb_firmware_get_firmware(struct gb_operation *op)
 
 	firmware_response = op->response->payload;
 	memcpy(firmware_response->data, firmware->fw->data + offset, size);
+	pr_info("%s: %d: %u: %u\n", __func__, __LINE__, offset, size);
 
 	return 0;
 }
@@ -157,6 +170,7 @@ static int gb_firmware_ready_to_boot(struct gb_operation *op)
 		return -EINVAL;
 	}
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	status = rtb_request->status;
 
 	/* Return error if the blob was invalid */
@@ -164,6 +178,7 @@ static int gb_firmware_ready_to_boot(struct gb_operation *op)
 		return -EINVAL;
 
 	queue_work(system_unbound_wq, &firmware->work);
+	pr_info("%s: %d\n", __func__, __LINE__);
 
 	/*
 	 * XXX Should we return error for insecure firmware?
@@ -193,6 +208,7 @@ static int gb_firmware_connection_init(struct gb_connection *connection)
 	struct gb_firmware *firmware;
 	int ret;
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	firmware = kzalloc(sizeof(*firmware), GFP_KERNEL);
 	if (!firmware)
 		return -ENOMEM;
@@ -222,6 +238,7 @@ static void gb_firmware_connection_exit(struct gb_connection *connection)
 {
 	struct gb_firmware *firmware = connection->private;
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	/* Release firmware */
 	if (firmware->fw)
 		free_firmware(firmware);

@@ -822,6 +822,7 @@ static void gb_connection_recv_request(struct gb_connection *connection,
 	struct gb_operation *operation;
 	int ret;
 
+	dev_info(&connection->dev, "%s: %d: %d\n", __func__, __LINE__, operation_id);
 	operation = gb_operation_create_incoming(connection, operation_id,
 						type, data, size);
 	if (!operation) {
@@ -859,6 +860,7 @@ static void gb_connection_recv_response(struct gb_connection *connection,
 	int errno = gb_operation_status_map(result);
 	size_t message_size;
 
+	dev_info(&connection->dev, "%s: %d: %d\n", __func__, __LINE__, operation_id);
 	operation = gb_operation_find_outgoing(connection, operation_id);
 	if (!operation) {
 		dev_err(&connection->dev, "operation not found\n");
@@ -920,6 +922,7 @@ void gb_connection_recv(struct gb_connection *connection,
 		return;		/* XXX Should still complete operation */
 	}
 
+	dev_info(&connection->dev, "%s: %d: %x\n", __func__, __LINE__, header.type);
 	operation_id = le16_to_cpu(header.operation_id);
 	if (header.type & GB_MESSAGE_TYPE_RESPONSE)
 		gb_connection_recv_response(connection, operation_id,

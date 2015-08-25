@@ -386,6 +386,7 @@ static void svc_process_hotplug(struct work_struct *work)
 	 */
 	intf_id = hotplug->intf_id;
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	intf = gb_interface_create(hd, intf_id);
 	if (!intf) {
 		dev_err(dev, "%s: Failed to create interface with id %hhu\n",
@@ -410,6 +411,7 @@ static void svc_process_hotplug(struct work_struct *work)
 	 * XXX Do we need to allocate device ID for SVC or the AP here? And what
 	 * XXX about an AP with multiple interface blocks?
 	 */
+	pr_info("%s:%d\n", __func__, __LINE__);
 	device_id = ida_simple_get(&greybus_svc_device_id_map,
 				   GB_DEVICE_ID_MODULES_START, 0, GFP_KERNEL);
 	if (device_id < 0) {
@@ -419,6 +421,7 @@ static void svc_process_hotplug(struct work_struct *work)
 		goto destroy_interface;
 	}
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	ret = gb_svc_intf_device_id(svc, intf_id, device_id);
 	if (ret) {
 		dev_err(dev, "%s: Device id operation failed, interface %hhu device_id %hhu (%d)\n",
@@ -426,6 +429,7 @@ static void svc_process_hotplug(struct work_struct *work)
 		goto ida_put;
 	}
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	/*
 	 * Create a two-way route between the AP and the new interface
 	 */
@@ -437,6 +441,7 @@ static void svc_process_hotplug(struct work_struct *work)
 		goto svc_id_free;
 	}
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	ret = gb_interface_init(intf, device_id);
 	if (ret) {
 		dev_err(dev, "%s: Failed to initialize interface, interface %hhu device_id %hhu (%d)\n",
@@ -475,6 +480,7 @@ static int gb_svc_intf_hotplug_recv(struct gb_operation *op)
 	struct gb_message *request = op->request;
 	struct svc_hotplug *svc_hotplug;
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	if (request->payload_size < sizeof(svc_hotplug->data)) {
 		dev_err(&op->connection->dev,
 			"%s: short hotplug request received (%zu < %zu)\n",
@@ -484,15 +490,18 @@ static int gb_svc_intf_hotplug_recv(struct gb_operation *op)
 	}
 
 	svc_hotplug = kmalloc(sizeof(*svc_hotplug), GFP_KERNEL);
+	pr_info("%s:%d\n", __func__, __LINE__);
 	if (!svc_hotplug)
 		return -ENOMEM;
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	svc_hotplug->connection = op->connection;
 	memcpy(&svc_hotplug->data, op->request->payload, sizeof(svc_hotplug->data));
 
 	INIT_WORK(&svc_hotplug->work, svc_process_hotplug);
 	queue_work(system_unbound_wq, &svc_hotplug->work);
 
+	pr_info("%s:%d\n", __func__, __LINE__);
 	return 0;
 }
 
@@ -573,6 +582,7 @@ static int gb_svc_request_recv(u8 type, struct gb_operation *op)
 	 * Incoming requests are guaranteed to be serialized and so we don't
 	 * need to protect 'state' for any races.
 	 */
+	pr_info("%s:%d:%hhu\n", __func__, __LINE__, type);
 	switch (type) {
 	case GB_REQUEST_TYPE_PROTOCOL_VERSION:
 		if (svc->state != GB_SVC_STATE_RESET)

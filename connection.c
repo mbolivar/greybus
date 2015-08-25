@@ -57,6 +57,7 @@ void greybus_data_rcvd(struct greybus_host_device *hd, u16 cport_id,
 {
 	struct gb_connection *connection;
 
+	pr_info("%s: %d:%d\n", __func__, __LINE__, cport_id);
 	connection = gb_connection_hd_find(hd, cport_id);
 	if (!connection) {
 		dev_err(hd->parent,

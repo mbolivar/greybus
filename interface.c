@@ -190,6 +190,7 @@ void gb_interface_exit(struct gb_interface *intf)
 
 	kfree(intf->product_string);
 	kfree(intf->vendor_string);
+	pr_info("%s: %d\n", __func__, __LINE__);
 }
 
 /*
@@ -228,11 +229,13 @@ int gb_interface_init(struct gb_interface *intf, u8 device_id)
 	intf->device_id = device_id;
 
 	/* Establish control CPort connection */
+	pr_info("%s: %d\n", __func__, __LINE__);
 	ret = gb_create_bundle_connection(intf, GREYBUS_CLASS_CONTROL);
 	if (ret) {
 		dev_err(&intf->dev, "Failed to create control CPort connection (%d)\n", ret);
 		return ret;
 	}
+	pr_info("%s: %d\n", __func__, __LINE__);
 
 	/* Get manifest size using control protocol on CPort */
 	size = gb_control_get_manifest_size_operation(intf);
@@ -245,10 +248,12 @@ int gb_interface_init(struct gb_interface *intf, u8 device_id)
 			return -EINVAL;
 	}
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	manifest = kmalloc(size, GFP_KERNEL);
 	if (!manifest)
 		return -ENOMEM;
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	/* Get manifest using control protocol on CPort */
 	ret = gb_control_get_manifest_operation(intf, manifest, size);
 	if (ret) {
@@ -266,6 +271,7 @@ int gb_interface_init(struct gb_interface *intf, u8 device_id)
 		goto free_manifest;
 	}
 
+	pr_info("%s: %d\n", __func__, __LINE__);
 	/*
 	 * XXX
 	 * We've successfully parsed the manifest.  Now we need to
