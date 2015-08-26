@@ -228,8 +228,10 @@ int gb_svc_connection_create(struct gb_svc *svc,
 	request.tc = 0;
 	request.flags = CPORT_FLAGS_CSV_N | CPORT_FLAGS_E2EFC;
 
-	return gb_operation_sync(svc->connection, GB_SVC_TYPE_CONN_CREATE,
-				 &request, sizeof(request), NULL, 0);
+	/* Need to wait for a bit longer, and so the timeout API */
+	return gb_operation_sync_timeout(svc->connection,
+					 GB_SVC_TYPE_CONN_CREATE, &request,
+					 sizeof(request), NULL, 0, 0);
 }
 EXPORT_SYMBOL_GPL(gb_svc_connection_create);
 
