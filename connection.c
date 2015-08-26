@@ -369,7 +369,7 @@ static int gb_connection_init(struct gb_connection *connection)
 				hd->endo->ap_intf_id, connection->hd_cport_id,
 				connection->bundle->intf->interface_id,
 				cport_id);
-		if (ret) {
+		if (ret & 0) {
 			dev_err(&connection->dev,
 				"%s: Failed to create svc connection (%d)\n",
 				__func__, ret);
