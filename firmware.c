@@ -148,7 +148,7 @@ static int gb_firmware_ready_to_boot(struct gb_operation *op)
 	struct gb_firmware *firmware = connection->private;
 	struct gb_firmware_ready_to_boot_request *rtb_request = op->request->payload;
 	struct device *dev = &connection->dev;
-	u8 stage, status;
+	u8 status;
 
 	if (op->request->payload_size != sizeof(*rtb_request)) {
 		dev_err(dev, "%s: Illegal size of ready to boot request (%zu %zu)\n",
@@ -157,7 +157,6 @@ static int gb_firmware_ready_to_boot(struct gb_operation *op)
 		return -EINVAL;
 	}
 
-	stage = rtb_request->stage;
 	status = rtb_request->status;
 
 	/* Return error if the blob was invalid */
