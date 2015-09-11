@@ -80,6 +80,8 @@ struct greybus_host_driver {
 	int (*message_send)(struct greybus_host_device *hd, u16 dest_cport_id,
 			struct gb_message *message, gfp_t gfp_mask);
 	void (*message_cancel)(struct gb_message *message);
+
+	void (*cport_reset)(struct greybus_host_device *hd, u16 cport_id);
 };
 
 struct greybus_host_device {

@@ -366,6 +366,9 @@ static int gb_connection_init(struct gb_connection *connection)
 	 * cport.
 	 */
 	if (!(protocol->flags & GB_PROTOCOL_SKIP_SVC_CONNECTION)) {
+		if (hd->driver->cport_reset)
+			hd->driver->cport_reset(hd, connection->hd_cport_id);
+
 		ret = gb_svc_connection_create(hd->svc,
 				hd->endo->ap_intf_id, connection->hd_cport_id,
 				connection->bundle->intf->interface_id,

@@ -60,6 +60,8 @@ static DEFINE_KFIFO(apb1_log_fifo, char, APB1_LOG_SIZE);
 /* vendor request to get the number of cports available */
 #define REQUEST_CPORT_COUNT	0x04
 
+#define REQUEST_RESET_CPORT	0x05
+
 /*
  * @endpoint: bulk in endpoint for CPort data
  * @urb: array of urbs for the CPort in messages
@@ -365,10 +367,31 @@ static void message_cancel(struct gb_message *message)
 	usb_free_urb(urb);
 }
 
+static void cport_reset(struct greybus_host_device *hd, u16 cport_id)
+{
+	struct es1_ap_dev *es1 = hd_to_es1(hd);
+	struct usb_device *udev = es1->usb_dev;
+	int retval;
+
+	if (!udev)
+		return;
+
+	retval = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+				 REQUEST_RESET_CPORT,
+				 USB_DIR_OUT | USB_TYPE_VENDOR |
+				 USB_RECIP_INTERFACE, 0, cpu_to_le16(cport_id),
+				 NULL, 0, ES1_TIMEOUT);
+	if (retval < 0) {
+		dev_err(&udev->dev, "Cannot reset CPort: %hu (%d)\n", cport_id,
+			retval);
+	}
+}
+
 static struct greybus_host_driver es1_driver = {
 	.hd_priv_size		= sizeof(struct es1_ap_dev),
 	.message_send		= message_send,
 	.message_cancel		= message_cancel,
+	.cport_reset		= cport_reset,
 };
 
 /* Common function to report consistent warnings based on URB status */
